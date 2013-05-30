@@ -16,20 +16,31 @@ CONFIG_FILE = 'settings.ini'
 USER_NAME = 'root'
 PASSWORD = 'root'
 
-def read_configuration():
+#--------------------------------------
+# read_configuration
+# read configuration file
+#--------------------------------------
+def read_mysql_configuration():
 
-	if !os.path.exists(CONFIG_FILE):
+	if os.path.exists(CONFIG_FILE) is False:
+		print("config file is not exists")
 		return 1
 
 	conf = ConfigParser.SafeConfigParser()
-	conf.read(CONFIG_FILE)
+	conf.read( CONFIG_FILE )
 
-	if !conf.has_option("mysql_user", "username") or !conf.has_option("mysql_user", "password"):
+	if conf.has_option("mysql_user", "username") is False or conf.has_option("mysql_user", "password") is False:
+		print("conf.has_option[username]or[password]")
 		return 1
 
 	USER_NAME 	= conf.get("mysql_user", "username")
-	PASSWORD 	= conf.read("mysql_user", "password")
+	PASSWORD 	= conf.get("mysql_user", "password")
+	return 0
 
+#--------------------------------------
+# alter_all_mysql
+# defrag all mysql database
+#--------------------------------------
 def alter_all_mysql():
     conn = MySQLdb.connect(user=USER_NAME, passwd=PASSWORD)
     cur = conn.cursor()
@@ -39,7 +50,7 @@ def alter_all_mysql():
     conn.close()
 
     for database in databases:
-        conn = MySQLdb.connect(user=USER_NAME, db=database)
+        conn = MySQLdb.connect(user=USER_NAME, db=database, passwd=PASSWORD)
         cur1 = conn.cursor()
         cur1.execute('SHOW TABLE STATUS')
         for t in cur1:
@@ -56,9 +67,9 @@ def alter_all_mysql():
 
 if __name__ == '__main__':
 
-	result =read_configuration()
+	result = read_mysql_configuration()
 
-	if result == 1
-		sys.exit()
-
-    alter_all_mysql()
+	if result == 1:
+		print("ConfigFile read error")
+	else:
+		alter_all_mysql()
