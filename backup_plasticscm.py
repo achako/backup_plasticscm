@@ -22,7 +22,9 @@ import datetime
 import logging
 import ConfigParser
 import glob
+import time
 from subprocess import check_call
+from operator import itemgetter
 
 # Setting File------------------------------
 # backup_attribute
@@ -53,7 +55,7 @@ def delete_old_logfile():
 	file_lst = []
 	for file in filenames:
 		file = os.path.join( BACKUP_LOG_DIR, file )
-		file_lst.append([file,os.stat( file ).st_size,time.ctime(os.stat(file).st_mtime)])
+		file_lst.append([file,os.stat( file ).st_size, time.ctime(os.stat(file).st_mtime)])
 
 	delete_cnt = len( file_lst ) - BACKUP_CNT + 1
 	
@@ -94,11 +96,7 @@ def setup_backuplog():
 	logging.basicConfig(filename=backuplog, level=logging.DEBUG, filemode='w', format="%(asctime)s [%(levelname)s]: %(message)s")
 
 	# write header
-	header_message = "\n#================================================\n\
-						# Backup Start: " + now.strftime("%Y/%m/%d %H:%M:%S") + "\n\
-						#================================================\n\n"
-	logging.debug( header_message )
-
+	logging.debug( "Backup Start" )
 
 #--------------------------------------
 # output_config
@@ -125,6 +123,18 @@ def output_config():
 # read configuration file
 #--------------------------------------
 def read_configuration():
+	global BACKUP_LOG_DIR
+	global BACKUP_CNT
+	global DATABASE_TYPE
+	global LOCAL_DIR
+	global COMPRESS
+	global USE_REMOTE_BACKUP
+	global REMOTE_HOST
+	global REMOTE_USER
+	global REMOTE_PASSWORD
+	global BACKUP_DIR
+	global USER_NAME
+	global PASSWORD
 
 	if os.path.exists(CONFIG_FILE) is False:
 		setup_backuplog()
@@ -176,4 +186,4 @@ if __name__ == "__main__":
 	
 	if result == 1:
 		sys.exit()
-		
+	
