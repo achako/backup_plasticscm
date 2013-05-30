@@ -21,7 +21,9 @@ PASSWORD = 'root'
 # read configuration file
 #--------------------------------------
 def read_mysql_configuration():
-
+	grobal USER_NAME
+	grobal PASSWORD
+	
 	if os.path.exists(CONFIG_FILE) is False:
 		print("config file is not exists")
 		return 1
@@ -35,6 +37,7 @@ def read_mysql_configuration():
 
 	USER_NAME 	= conf.get("mysql_user", "username")
 	PASSWORD 	= conf.get("mysql_user", "password")
+	
 	return 0
 
 #--------------------------------------
