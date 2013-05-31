@@ -20,6 +20,7 @@
 import os, zipfile, shutil, paramiko, traceback
 from subprocess import check_call
 from config_file import*
+from log_file_manager import *
 import alter_mysql
 
 
