@@ -10,69 +10,41 @@
 
 import os
 import MySQLdb
-import ConfigParser
-
-CONFIG_FILE = 'settings.ini'
-USER_NAME = 'root'
-PASSWORD = 'root'
-
-#--------------------------------------
-# read_configuration
-# read configuration file
-#--------------------------------------
-def read_mysql_configuration():
-	grobal USER_NAME
-	grobal PASSWORD
-	
-	if os.path.exists(CONFIG_FILE) is False:
-		print("config file is not exists")
-		return 1
-
-	conf = ConfigParser.SafeConfigParser()
-	conf.read( CONFIG_FILE )
-
-	if conf.has_option("mysql_user", "username") is False or conf.has_option("mysql_user", "password") is False:
-		print("conf.has_option[username]or[password]")
-		return 1
-
-	USER_NAME 	= conf.get("mysql_user", "username")
-	PASSWORD 	= conf.get("mysql_user", "password")
-	
-	return 0
+from config_file import*
 
 #--------------------------------------
 # alter_all_mysql
 # defrag all mysql database
 #--------------------------------------
-def alter_all_mysql():
-    conn = MySQLdb.connect(user=USER_NAME, passwd=PASSWORD)
-    cur = conn.cursor()
-    cur.execute('SHOW DATABASES')
-    databases = [database for database, in cur if database != 'mysql']
-    cur.close()
-    conn.close()
+def alter_all_mysql( user_name, password ):
+	_conn = MySQLdb.connect(user=user_name, passwd=password)
+	_cur = _conn.cursor()
+	_cur.execute('SHOW DATABASES')
+	_databases = [database for database, in _cur if database != 'mysql']
+	_cur.close()
+	_conn.close()
+	
+	_debug_log	= LogFileManager()
 
-    for database in databases:
-        conn = MySQLdb.connect(user=USER_NAME, db=database, passwd=PASSWORD)
-        cur1 = conn.cursor()
-        cur1.execute('SHOW TABLE STATUS')
-        for t in cur1:
-            tablename = t[0]
-            engine = t[1]
-            if engine and engine.lower() == 'innodb':
-                print 'Defrag %s.%s' % (database, tablename)
-                cur2 = conn.cursor()
-                cur2.execute('ALTER TABLE %s ENGINE=INNODB' % tablename)
-                cur2.close()
-        cur1.close()
-        conn.close()
-
+	for _database in _databases:
+		_conn = MySQLdb.connect(user=user_name, db=_database, passwd=password)
+		_cur1 = _conn.cursor()
+		_cur1.execute('SHOW TABLE STATUS')
+		for t in _cur1:
+			_tablename = t[0]
+			_engine = t[1]
+			if _engine and _engine.lower() == 'innodb':
+				_debug_log.output( 'Debug', 'Defrag %s.%s' % (_database, _tablename) )
+				_cur2 = _conn.cursor()
+				_cur2.execute('ALTER TABLE %s ENGINE=INNODB' % _tablename)
+				_cur2.close()
+		_cur1.close()
+		_conn.close()
 
 if __name__ == '__main__':
 
-	result = read_mysql_configuration()
+	_conf	= ConfigFile( 'ALTER' )
+	_result	= _conf.read_configuration()
 
-	if result == 1:
-		print("ConfigFile read error")
-	else:
-		alter_all_mysql()
+	if _result != 1:
+		alter_all_mysql( _conf.m_user_name, _conf.m_password )
