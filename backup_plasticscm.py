@@ -17,12 +17,21 @@
 # zip  directory
 # send to remote machine
 
-import os, zipfile, shutil, paramiko
+import os, zipfile, shutil, paramiko, traceback
 from subprocess import check_call
 from config_file import*
+import alter_mysql
+
 
 DUMP_FILE			= 'dump_plasticscm.sql'
 BACKUP_DIR			= ''
+
+def stop_plasticSCM():
+	os.system( "/etc/init.d/plasticsd4 stop" )
+	
+def start_plasticSCM():
+	os.system( "/etc/init.d/plasticsd4 start" )
+
 
 #--------------------------------------
 # check_backup_dir
@@ -64,13 +73,33 @@ def dump_mysql( dump_date, local_dir, user_name, password ):
 	return 0
 
 #--------------------------------------
+# copy_setting_files
+#--------------------------------------
+def copy_setting_files():
+	DB_CONF 		= "/opt/plasticscm4/server/db.conf"
+	SERVER_CONF 	= "/opt/plasticscm4/server/server.conf"
+	USERS_CONF 		= "/opt/plasticscm4/server/users.conf"
+	GROUPS_CONF 	= "/opt/plasticscm4/server/groups.conf"
+	SQL_CONF		= "/etc/mysql/my.cnf"
+	
+	copy_db 	= BACKUP_DIR + os.path.basename( DB_CONF )
+	copy_server = BACKUP_DIR + os.path.basename( SERVER_CONF )
+	copy_users 	= BACKUP_DIR + os.path.basename( USERS_CONF )
+	copy_groups = BACKUP_DIR + os.path.basename( GROUPS_CONF )
+	copy_mysql 	= BACKUP_DIR + os.path.basename( SQL_CONF )
+
+	shutil.copy( DB_CONF, 		copy_db )
+	shutil.copy( SERVER_CONF, 	copy_server )
+	shutil.copy( USERS_CONF, 	copy_users )
+	shutil.copy( GROUPS_CONF, 	copy_groups )
+	shutil.copy( SQL_CONF, 		copy_mysql )
+
+#--------------------------------------
 # zip
 #--------------------------------------
-def zip_backupfile( compress ):
+def zip_backupfile():
 	global BACKUP_DIR
 	
-	if compress is False:
-		return 0
 	_logger = LogFileManager()
 
 	_logger.output( 'Debug', "Start to compress backup file" )
@@ -97,49 +126,64 @@ def zip_backupfile( compress ):
 	return 0
 
 #--------------------------------------
+# delete_backup_files
+#--------------------------------------
+def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
+	
+	# count backupfiles in remote directory
+	filenames = sftp_connection.listdir( remote_dir )
+
+	# get total size of remote directory
+	# set fields of time & filesize
+	file_lst = []
+	total_size = 0
+	for file in filenames:
+		file = os.path.join( remote_dir, file )
+		file_lst.append([file,sftp_connection.stat( file ).st_size, time.ctime( sftp_connection.stat(file).st_mtime )])
+		total_size += sftp_connection.stat( file ).st_size
+
+	_logger.output( 'Debug', "BackupDirectory's total size: " + str( total_size ) + "(Byte)" )
+	
+	if total_size >= backup_del_size * 1000000:
+		# order by old date
+		lst = sorted( file_lst, key=itemgetter(2), reverse = True )
+		# if total size is larger than BACKUP_DEL_SIZE, delete a half of files
+		cnt = 0
+		for file in lst:
+			if cnt % 2 == 0:
+				sftp_connection.remove( file[ 0 ] )
+				_logger.debug( "removed backup:" + file[ 0 ] )
+			cnt += 1
+
+#--------------------------------------
 # send_remote_machine
 #--------------------------------------
-def send_remote_machine():
+def send_remote_machine( conf ):
 
-	if USE_REMOTE_BACKUP is False:
-		return
-	logging.debug( "Start to send backup file" )
+	_logger = LogFileManager()
+
+	_logger.output( 'Debug', "Start to send backup file...." )
 	# SFTP by using paramiko
 	client = None
 	sftp_connection = None
 	try:
 		client = paramiko.SSHClient()
 		client.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
-		client.connect( REMOTE_HOST, port=REMOTE_PORT, username=REMOTE_USER, password=REMOTE_PASSWORD )
+		client.connect( conf.m_remote_host, port=conf.m_remote_port, username=conf.m_remote_user, password=conf.m_remote_password )
 		sftp_connection = client.open_sftp()
 
-		# count backupfiles in remote directory
-		filenames = sftp_connection.listdir( REMOTE_DIR )
+		delete_backup_files( sftp_connection, conf.m_remote_dir, conf.m_backup_del_size )
 
-		# get total size of remote directory
-		# set fields of time & filesize
-		total_size = 0
-		for file in filenames:
-			file = os.path.join( REMOTE_DIR, file )
-			file_lst.append([file,sftp_connection.stat( file ).st_size, time.ctime( sftp_connection.stat(file).st_mtime )])
-			total_size += sftp_connection.stat( file ).st_size
-		
-		if total_size >= BACKUP_DEL_SIZE * 1000000:
-			# order by old date
-			lst = sorted( file_lst,key=itemgetter(2), reverse = True )
-			# if total size is larger than BACKUP_DEL_SIZE, delete a half of files
-			cnt = 0
-			for file in lst:
-				if cnt % 2 == 0:
-					sftp_connection.remove( file[ 0 ] )
-					logging.debug( "removed backup:" + file[ 0 ] )
-				cnt += 1
+		_remote_path = conf.m_remote_dir
+		if _remote_path.endswith( "/" ) is False:
+			_remote_path += "/"
+		_remote_path += os.path.basename( BACKUP_DIR )
 
 		# send_file
-		sftp_connection.put( BACKUP_DIR, REMOTE_DIR )
+		_logger.output( 'Debug', "Send BackupFile" + BACKUP_DIR +" to " + _remote_path )
+		sftp_connection.put( BACKUP_DIR, _remote_path )
 	except:
-		logging.error( traceback.format_exc() )
-		send_mail( traceback.format_exc() )
+		_logger.output( 'Debug', traceback.format_exc() )
 
 	finally:
 		if client:
@@ -151,19 +195,44 @@ def send_remote_machine():
 # main
 #--------------------------------------
 if __name__ == "__main__":
+
 	conf 	= ConfigFile( 'BACKUP' )
 	result	= conf.read_configuration()
-	
+
+	_logger = LogFileManager()
+
 	if result == 1:
+		_logger.shutdown()
 		sys.exit()
+	
+#	_logger.output( 'Debug', "PlasticSCM Stop" )
+#	stop_plasticSCM()
+
+	# defrag mysql
+	alter_mysql.alter_all_mysql( conf.m_user_name, conf.m_password )
 
 	if conf.m_database_type == 'mysql':
 		result = dump_mysql( conf.m_dump_date, conf.m_local_dir, conf.m_user_name, conf.m_password )
-	if result == 1:
-		sys.exit()
+		if result == 1:
+			_logger.shutdown()
+			sys.exit()
 	
-	result = zip_backupfile( conf.m_compress )
+	result = copy_setting_files()
 	
-	if result == 1:
-		sys.exit()
-		
+#	_logger.output( 'Debug', "PlasticSCM Start" )
+#	start_plasticSCM()
+	
+	if conf.m_compress:
+		result = zip_backupfile()	
+		if result == 1:
+			_logger.shutdown()
+			sys.exit()
+	
+	if conf.m_use_remote_backup is True:
+		result = send_remote_machine( conf )
+		if result == 1:
+			_logger.shutdown()
+			sys.exit()
+	
+	_logger.shutdown()
+	

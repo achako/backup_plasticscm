@@ -4,7 +4,7 @@
 #######################################
 
 #!/usr/bin/env python
-import os, logging, glob, time
+import os, logging, glob, time, traceback
 from email.MIMEText import MIMEText
 from email.Header import Header
 from email.Utils import formatdate
@@ -42,8 +42,8 @@ class LogFileManager(object):
 		# order by old date
 		lst = sorted( file_lst,key=itemgetter(0), reverse = False )
 		
-		for file in lst:
-			print( file[ 0 ] + " | " + str( file[ 1 ] ) + " | " + file[ 2 ] )
+#		for file in lst:
+#			print( file[ 0 ] + " | " + str( file[ 1 ] ) + " | " + file[ 2 ] )
 		
 		for file in lst:
 			os.remove( file[ 0 ] )
@@ -61,13 +61,27 @@ class LogFileManager(object):
 
 		_backuplog = log_dir + self.__log_name + dump_date + ".log"
 		self.output( 'Debug', "make logfile:\t" + os.path.abspath( _backuplog ) )
-		logging.basicConfig(filename=_backuplog, level=logging.DEBUG, format="%(asctime)s [%(levelname)s]: %(message)s")
+		try:
+			logging.basicConfig(filename=_backuplog, level=logging.DEBUG, format="%(asctime)s [%(levelname)s]: %(message)s")
+		except:
+			print( traceback.format_exc() )
+			return 1
+		
+#		list = os.listdir( log_dir )
+#		for file in list:
+#			print( file )
 
 		# write header
 		logging.debug( "Backup Start" )
 		
 		self.__output_log = True
+		return 0
 		
+	#--------------------------------------
+	# shutdown
+	#--------------------------------------
+	def shutdown( self ):
+		logging.shutdown()
 	
 	#--------------------------------------
 	# sendErrorMail
@@ -114,7 +128,7 @@ class LogFileManager(object):
 	def output( self, error_type, message ):
 		if self.__output_log is True:
 			self.__logging_file( error_type, message )
-			self.__print_message( error_type, message )
+#			self.__print_message( error_type, message )
 		else:
 			self.__print_message( error_type, message )
 		

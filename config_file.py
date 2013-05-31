@@ -136,7 +136,7 @@ class ConfigFile(object):
 		if conf.has_option( "remote_backup", "remote_password"):
 			self.m_remote_password	= conf.get("remote_backup", "remote_password")
 		if conf.has_option( "remote_backup", "remote_dir"):
-			self.m_remote_dir		= conf.get("backup_attribute", "remote_dir")
+			self.m_remote_dir		= conf.get("remote_backup", "remote_dir")
 
 	#--------------------------------------
 	# read configuration file
@@ -161,6 +161,7 @@ class ConfigFile(object):
 		# setup logsettings
 		if self.__config_type == 'BACKUP':
 			self.__debug_log.setup_backuplog( self.m_backup_log_dir, self.m_dump_date, self.m_backup_log_cnt )
+
 
 		if self.__config_type == 'BACKUP':
 			self.__read_backup_attributes( conf )
