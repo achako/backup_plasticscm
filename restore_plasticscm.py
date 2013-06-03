@@ -4,7 +4,7 @@
 #######################################
 
 #!/usr/bin/env python
-import sys, os, zipfile
+import sys, os, zipfile, shutil
 from log_file_manager import *
 from config_file import*
 
@@ -33,7 +33,7 @@ def unzip_file( backup_path ):
 		_restore_dir += "/"
 		
 		if not os.path.exists( _restore_dir ):
-			os.makedirs( _"make uncompress directory: " + restore_dir )
+			os.makedirs( "make uncompress directory: " + _restore_dir )
 		_logger.output( 'Debug', "--zip files--" )
 		for _file in _zip.namelist():
 		
@@ -73,21 +73,38 @@ def copy_setting_files( restore_path ):
 
 	files = os.listdir( restore_path )
 	for file in files:
-		if file == os.path.basename( DB_CONF ):
-			_logger.output( 'Debug', DB_CONF + ": " + file )
-			shutil.copy( file, 		DB_CONF )
-		elif file == os.path.basename( SERVER_CONF ):
-			shutil.copy( file, 		SERVER_CONF )
-			_logger.output( 'Debug', SERVER_CONF + ": " + file )
-		elif file == os.path.basename( USERS_CONF ):
-			shutil.copy( file, 		USERS_CONF )
-			_logger.output( 'Debug', USERS_CONF + ": " + file )
-		elif file == os.path.basename( GROUPS_CONF ):
-			shutil.copy( file, 		GROUPS_CONF )
-			_logger.output( 'Debug', GROUPS_CONF + ": " + file )
-		elif file == os.path.basename( SQL_CONF ):
-			shutil.copy( file, 		SQL_CONF )
-			_logger.output( 'Debug', SQL_CONF + ": " + file )
+	
+		try:
+			_logger.output( 'Debug', file )
+			_cp_file = restore_path + file
+			if file == os.path.basename( DB_CONF ):
+				_logger.output( 'Debug', DB_CONF + ": " + _cp_file )
+				if not os.access( DB_CONF, os.W_OK ):
+					os.chmod( DB_CONF,0755 )
+				shutil.copy( _cp_file, 		DB_CONF )
+			elif file == os.path.basename( SERVER_CONF ):
+				_logger.output( 'Debug', SERVER_CONF + ": " + _cp_file )
+				if not os.access( SERVER_CONF, os.W_OK ):
+					os.chmod( SERVER_CONF, 0755 )
+				shutil.copy( _cp_file, 		SERVER_CONF )
+			elif file == os.path.basename( USERS_CONF ):
+				_logger.output( 'Debug', USERS_CONF + ": " + _cp_file )
+				if not os.access( SERVER_CONF, os.W_OK ):
+					os.chmod( SERVER_CONF, 0755 )
+				shutil.copy( _cp_file, 		USERS_CONF )
+			elif file == os.path.basename( GROUPS_CONF ):
+				_logger.output( 'Debug', GROUPS_CONF + ": " + _cp_file )
+				if not os.access( SERVER_CONF, os.W_OK ):
+					os.chmod( SERVER_CONF, 0755 )
+				shutil.copy( _cp_file, 		GROUPS_CONF )
+			elif file == os.path.basename( SQL_CONF ):
+				_logger.output( 'Debug', SQL_CONF + ": " + _cp_file )
+				if not os.access( SERVER_CONF, os.W_OK ):
+					os.chmod( SERVER_CONF, 0755 )
+				shutil.copy( _cp_file, 		SQL_CONF )
+		except:
+			_logger.output( 'Error', traceback.format_exc() )
+			continue
 
 	_logger.output( 'Debug', "End to copy setting file" )
 
@@ -174,8 +191,8 @@ if __name__ == "__main__":
 		sys.exit()
 
 	# copy setting file
-#	_result = copy_setting_files( _restore_dir )
-#	if _result == 1:
-#		sys.exit()
+	_result = copy_setting_files( _restore_dir )
+	if _result == 1:
+		sys.exit()
 
 
