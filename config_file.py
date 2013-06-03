@@ -79,7 +79,7 @@ class ConfigFile(object):
 		self.m_password 	= conf.get("mysql_user", "password")
 
 		return 0
-		
+
 	#--------------------------------------
 	# __read_log_attributes
 	#--------------------------------------
@@ -89,10 +89,7 @@ class ConfigFile(object):
 		if conf.has_option( "log_attribute", "log_save_cnt"):
 			self.m_backup_log_cnt	= conf.getint("log_attribute", "log_save_cnt")
 
-		# change directory to script directory
-		os.chdir( os.path.abspath( os.path.dirname(__file__) ) )
 		_current_dir = os.getcwd()
-		self.__debug_log.output( 'Debug', "Current Directory:" + _current_dir )
 		
 		# check BACKUP_LOG_DIR is exists and directory
 		if os.path.exists( self.m_backup_log_dir ):
@@ -142,7 +139,7 @@ class ConfigFile(object):
 	# read configuration file
 	#--------------------------------------
 	def read_configuration( self ):
-		
+
 		if os.path.exists(self.__config_file ) is False:
 			self.__debug_log.output( 'Error', "configfile is not exists" )
 			return 1

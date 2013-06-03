@@ -4,7 +4,7 @@
 #######################################
 
 #!/usr/bin/env python
-import os, logging, glob, time, traceback
+import os, sys, logging, glob, time, traceback
 from email.MIMEText import MIMEText
 from email.Header import Header
 from email.Utils import formatdate
@@ -40,7 +40,7 @@ class LogFileManager(object):
 			return
 			
 		# order by old date
-		lst = sorted( file_lst,key=itemgetter(0), reverse = False )
+		lst = sorted( file_lst, key=itemgetter(2), reverse = True )
 		
 #		for file in lst:
 #			print( file[ 0 ] + " | " + str( file[ 1 ] ) + " | " + file[ 2 ] )
@@ -87,11 +87,11 @@ class LogFileManager(object):
 	# sendErrorMail
 	#--------------------------------------
 	def send_mail( self, mailtext ):
-		msg = MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
-		msg['Subject']=Header('backup error','utf-8')
-		msg['From']='root@zisaba.com'
-		msg['To']='hiraishi_asami@artdink.co.jp'
-		msg['Date']=formatdate()
+		msg 			= MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
+		msg['Subject']	= Header('backup error','utf-8')
+		msg['From']		= 'root@zisaba.com'
+		msg['To']		= 'hiraishi_asami@artdink.co.jp'
+		msg['Date']		= formatdate()
 
 		sendmail = smtplib.SMTP('smtp.artdink.co.jp',25)
 		sendmail.ehlo()
@@ -101,6 +101,15 @@ class LogFileManager(object):
 		sendmail.sendmail(msg['From'],msg['To'],msg.as_string())
 
 		exit()
+			
+	#--------------------------------------
+	# __read_backup_attributes
+	#--------------------------------------
+	def set_currect_dir( self ):
+		# change directory to script directory
+		os.chdir( os.path.abspath( os.path.dirname(__file__) ) )
+		_current_dir = os.getcwd()
+		self.output( 'Debug', "Current Directory:" + _current_dir )
 	
 	#--------------------------------------
 	# __logging_file
@@ -112,7 +121,7 @@ class LogFileManager(object):
 			logging.warning( message )
 		elif error_type == 'Error':
 			logging.error( message )
-			self.send_mail( message )
+#			self.send_mail( message )
 			sys.exit()
 
 	#--------------------------------------

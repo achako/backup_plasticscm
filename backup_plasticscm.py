@@ -5,7 +5,6 @@
 
 #!/usr/bin/env python
 
-
 # sudo plasticsd4 stop
 # cp /opt/PlasticSCM/server/db.conf	LOCAL_DIR
 # cp /opt/PlasticSCM/server/server.conf LOCAL_DIR
@@ -63,7 +62,7 @@ def dump_mysql( dump_date, local_dir, user_name, password ):
 	try:
 		#backup mysql
 		_backup_path = BACKUP_DIR + DUMP_FILE
-		command_str = 'mysqldump --events -u' + user_name + ' -p' + password + ' -x --all-databases --hex-blob > ' + _backup_path
+		command_str = 'mysqldump --events -x --all-databases --default-character-set=utf8 -u' + user_name + ' -p' + password + ' > ' + _backup_path
 		os.system( command_str )
 	except:
 		_logger.output( 'Error', traceback.format_exc() )
@@ -82,7 +81,7 @@ def copy_setting_files():
 	USERS_CONF 		= "/opt/plasticscm4/server/users.conf"
 	GROUPS_CONF 	= "/opt/plasticscm4/server/groups.conf"
 	SQL_CONF		= "/etc/mysql/my.cnf"
-	
+
 	copy_db 	= BACKUP_DIR + os.path.basename( DB_CONF )
 	copy_server = BACKUP_DIR + os.path.basename( SERVER_CONF )
 	copy_users 	= BACKUP_DIR + os.path.basename( USERS_CONF )
@@ -110,17 +109,35 @@ def zip_backupfile():
 	if len( filenames ) == 0:
 		_logger.output( 'Error', "no file in backup directory." )
 		return 1
-	zipfile_path = BACKUP_DIR.rstrip( "/" ) + ".zip"
-	zip = zipfile.ZipFile( zipfile_path, 'w', zipfile.ZIP_DEFLATED )
 	
-	for file in filenames:
-		zip.write( zipfile_path, file )
-
-	zip.close()
+	_zip = None
+	try:
+		_zipfile_path = BACKUP_DIR.rstrip( "/" ) + ".zip"
+		_zip = zipfile.ZipFile( _zipfile_path, 'w', zipfile.ZIP_DEFLATED )
+		for _root_path, _dirs, _files in os.walk( BACKUP_DIR ):
+			for _file in _files:
+				_path = _root_path + '/' + _file
+				if _path == BACKUP_DIR:
+					continue
+				_logger.output( 'Debug', "zip file:" + _path )
+				_arc_name = os.path.relpath( _path, os.path.dirname( BACKUP_DIR ))
+				_logger.output( 'Debug', "arc_file:" + _arc_name )
+				_zip.write( _path, _arc_name )
+			for _directory in _dirs:
+				_path = _root_path + '/' + _directory + '/'
+				_logger.output( 'Debug', "zip file:" + _path )
+				_arc_name = os.path.relpath( _path, os.path.dirname( BACKUP_DIR ) ) + os.path.sep
+				_logger.output( 'Debug', "arc_file:" + _arc_name )
+				_zip.writestr( _path, _arc_name )
+	except:
+		_logger.output( 'Error', traceback.format_exc() )
+	finally:
+		if not _zip == None:
+			_zip.close()
 	
 	# remove uncompress directory if compress
 	shutil.rmtree( BACKUP_DIR )
-	BACKUP_DIR = zipfile_path
+	BACKUP_DIR = _zipfile_path
 
 	_logger.output( 'Debug', "Success compress:" + BACKUP_DIR )
 
@@ -151,7 +168,7 @@ def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 		# if total size is larger than BACKUP_DEL_SIZE, delete a half of files
 		cnt = 0
 		for file in lst:
-			if cnt % 2 == 0:
+			if cnt % 2 == 1:
 				sftp_connection.remove( file[ 0 ] )
 				_logger.debug( "removed backup:" + file[ 0 ] )
 			cnt += 1
@@ -197,10 +214,11 @@ def send_remote_machine( conf ):
 #--------------------------------------
 if __name__ == "__main__":
 
+	_logger = LogFileManager()
+	_logger.set_currect_dir()
+
 	conf 	= ConfigFile( 'BACKUP' )
 	result	= conf.read_configuration()
-
-	_logger = LogFileManager()
 
 	if result == 1:
 		_logger.shutdown()
