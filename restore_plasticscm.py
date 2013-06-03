@@ -32,19 +32,21 @@ def unzip_file( backup_path ):
 		_restore_dir = backup_path.replace( ".zip", "" )
 		_restore_dir += "/"
 		
+		if not os.path.exists( _restore_dir ):
+			os.makedirs( _"make uncompress directory: " + restore_dir )
 		_logger.output( 'Debug', "--zip files--" )
 		for _file in _zip.namelist():
-			_logger.output( 'Debug', _file )
-			if os.path.isdir( _file ):
-				if not os.path.exists( _file ):
-					os.makedirs( _file )
-			elif os.path.isfile( _file ):
-				_this_dir = os.path.dirname( _file )
-				if not os.path.exists( _this_dir ):
-					os.makedirs( _this_dir )
-				uzf = file( _file, 'wb' )
-				uzf.write( _zip.read( _file ) )
-				uzf.close()
+		
+			_list_file = _restore_dir + _file
+			_logger.output( 'Debug', "uncompress: " + _list_file )
+			
+			_file_dir = os.path.dirname( _list_file )
+			if not os.path.exists( _file_dir ):
+				_logger.output( 'Debug', "make direcrtory: " + _file_dir )
+				os.makedirs( _file_dir )
+			uzf = file( _list_file, 'wb' )
+			uzf.write( _zip.read( _file ) )
+			uzf.close()
 	except:
 		_logger.output( 'Error', traceback.format_exc() )
 		return 1, _restore_dir
@@ -172,8 +174,8 @@ if __name__ == "__main__":
 		sys.exit()
 
 	# copy setting file
-	_result = copy_setting_files( _restore_dir )
-	if _result == 1:
-		sys.exit()
+#	_result = copy_setting_files( _restore_dir )
+#	if _result == 1:
+#		sys.exit()
 
 
