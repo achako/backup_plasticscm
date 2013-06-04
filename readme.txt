@@ -31,8 +31,39 @@ restore_plasticscm.py
 // 設定手順
 //=================================
 
+・バックアップスクリプトをダウンロード(まだ場所を決めていないので後から書くこと)
 
-
+・必要なものをインストール
+	Python
+		//-----------------
+		// paramiko
+		//-----------------
+		sudo apt-get install python-paramiko
+		//-----------------
+		// MySQLdb
+		//-----------------
+			wget http://jaist.dl.sourceforge.net/proj...n-1.2.3.tar.gz
+			tar xzvf MySQL-python-1.2.3.tar.gz
+			Python --version
+			sudo aptitude install python*.*-dev
+			cd MySQL-python-1.2.3
+			vi ./site.sfg
+				コメントアウトをはずして書き換える
+				mysql_config = /usr/bin/mysql_config
+			sudo python setup.py install
+	NASに転送する場合
+		sudo apt-get install samba
+		sudo apt-get install  smbclient
+		sudo aptitude -y install sysv-rc-conf    ←smbdの自動起動用
+・設定ファイルに必要事項を入力する(設定ファイルの説明参照)
+・一定時間ごとにスクリプトを走らせるようにする
+	crontab -e    でエディタ立ち上げ
+	分	時	日	月	曜日	コマンド
+ 	*	2 	* 	 *	 1-7	python backup_plasticscm.py
+  	↑は毎日2時にスクリプトが走るようになっている
+	実行間隔や実行時間は各自で調整
+	実行日時の設定は以下のリンクを参照
+	http://www.express.nec.co.jp/linux/distributions/knowledge/system/crond.html
 
 
 //=================================

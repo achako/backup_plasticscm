@@ -32,6 +32,25 @@ def stop_plasticSCM():
 def start_plasticSCM():
 	os.system( "/etc/init.d/plasticsd4 start" )
 
+#--------------------------------------
+# get_dir_basename
+#--------------------------------------
+def get_dir_basename( dir_path ):
+	_logger = LogFileManager()
+
+	_logger.output( 'Debug', "get_dir_basename...." )
+	
+	_cd_dirlist = dir_path.split( "/" )
+	_ret_dir = ""
+	if dir_path.endswith( "/" ):
+		_logger.output( 'Debug', "get_dir_basename...." )
+		_ret_dir = _cd_dirlist[ len( _cd_dirlist ) - 2 ]
+	else:
+		_ret_dir = _cd_dirlist[ len( _cd_dirlist ) - 1 ]
+
+	_logger.output( 'Debug', "return :" + _ret_dir )
+
+	return _ret_dir
 
 #--------------------------------------
 # check_backup_dir
@@ -62,7 +81,7 @@ def dump_mysql( dump_date, local_dir, user_name, password ):
 	try:
 		#backup mysql
 		_backup_path = BACKUP_DIR + DUMP_FILE
-		command_str = 'mysqldump --events -x --all-databases --default-character-set=utf8 -u' + user_name + ' -p' + password + ' > ' + _backup_path
+		command_str = 'mysqldump --events -x --all-databases --default-character-set=utf8 --hex-brob -u' + user_name + ' -p' + password + ' > ' + _backup_path
 		os.system( command_str )
 	except:
 		_logger.output( 'Error', traceback.format_exc() )
@@ -161,8 +180,10 @@ def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 		total_size += sftp_connection.stat( file ).st_size
 
 	_logger.output( 'Debug', "BackupDirectory's total size: " + str( total_size ) + "(Byte)" )
+	_logger.output( 'Debug', "DeleteBackupSize: " + str( backup_del_size * 1000000 ) + "(Byte)" )
 	
 	if total_size >= backup_del_size * 1000000:
+		_logger.output( 'Debug', "total size over DeleteBackupSize: deete start..." )
 		# order by old date
 		lst = sorted( file_lst, key=itemgetter(2), reverse = True )
 		# if total size is larger than BACKUP_DEL_SIZE, delete a half of files
@@ -172,6 +193,7 @@ def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 				sftp_connection.remove( file[ 0 ] )
 				_logger.debug( "removed backup:" + file[ 0 ] )
 			cnt += 1
+		_logger.output( 'Debug', "Delete backup file end...." )
 
 #--------------------------------------
 # send_remote_machine
@@ -197,9 +219,24 @@ def send_remote_machine( conf ):
 			_remote_path += "/"
 		_remote_path += os.path.basename( BACKUP_DIR )
 
-		# send_file
 		_logger.output( 'Debug', "Send BackupFile" + BACKUP_DIR +" to " + _remote_path )
-		sftp_connection.put( BACKUP_DIR, _remote_path )
+		# send_file
+		if conf.m_compress is True:
+			_logger.output( 'Debug', "send compress files..." )
+			sftp_connection.put( BACKUP_DIR, _remote_path )
+		else:
+			#make directory
+			_logger.output( 'Debug', "send uncompress files..." )
+#			_cp_dir = _get_dir_basename( BACKUP_DIR )
+#			_logger.output( 'Debug', "makedir " + _cp_dir )
+#			sftp_connection.mkdir( _cp_dir )
+			# copy files
+			_files = os.listdir( BACKUP_DIR )
+			for _child in _files:
+#				if os.path.isfile( _child ):
+				_logger.output( 'Debug', "copy file " + BACKUP_DIR + _child )
+				sftp_connection.put( BACKUP_DIR + _child, _remote_path )
+			
 	except:
 		_logger.output( 'Error', "Failed to send backupfile to remote server" )
 		_logger.output( 'Error', traceback.format_exc() )
@@ -221,16 +258,15 @@ def send_file_server( conf ):
 	_logger = LogFileManager()
 
 	_logger.output( 'Debug', "Start to send backup file( file server )...." )
-	
+
 	strcommand = ""
-	
+
 	if BACKUP_DIR.endswith( ".zip" ):
 		_cd_dir = os.path.dirname( BACKUP_DIR )
 		_send_file = os.path.basename( BACKUP_DIR )
 		strcommand = "lcd " + _cd_dir +";put " + _send_file + ";"
 	elif os.path.isdir( BACKUP_DIR ):
-		_cd_dirlist = BACKUP_DIR.split( "/" )
-		_cp_dir = _cd_dirlist[ len( _cd_dirlist ) - 2 ]
+		_cp_dir = get_dir_basename( BACKUP_DIR )
 		strcommand = "lcd " + BACKUP_DIR + ";lcd ../;recurse on;prompt off;mput " + _cp_dir + ";"
 	else:
 		return 1
