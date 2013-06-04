@@ -10,6 +10,7 @@ PlasticSCMのデータベースと設定ファイルをバックアップする�
 ・データベース設定ファイル( /opt/PlasticSCM/server/sb.conf )
 ・ユーザー設定ファイル( /opt/PlasticSCM/server/users.conf )
 ・グループ設定ファイル( /opt/PlasticSCM/server/groups.conf )
+・MySQL設定ファイル( /etc/mysql/my.cnf )
 
 //=================================
 // 各ファイルの説明
@@ -21,10 +22,16 @@ alter_mysql.py
 backup_plasticscm.py
 	PlasticSCMのバックアップスクリプトです。
 	MySQLのデフラグを行ってからバックアップをします。
+restore_plasticscm.py
+	バックアップしたデータをリストアするスクリプトです。
+	引数にリストアするバックアップデータを指定します。
+	例) Python ./restore_plasticscm.py plasticscm2013-06-03-16-58.zip
 
 //=================================
 // 設定手順
 //=================================
+
+
 
 
 
@@ -66,8 +73,8 @@ remote_dir=
 
 [mysql_user]
 # MySQLにログインするためのユーザーです(デフォルトはroot)
-username=plastic
+username=root
 # MySQLにログインするためのパスワードです(デフォルトはroot)
-password=plastic
+password=root
 
 

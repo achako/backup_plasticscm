@@ -40,10 +40,10 @@ class LogFileManager(object):
 			return
 			
 		# order by old date
-		lst = sorted( file_lst, key=itemgetter(2), reverse = True )
+		lst = sorted( file_lst, key=itemgetter(2), reverse = False )
 		
-#		for file in lst:
-#			print( file[ 0 ] + " | " + str( file[ 1 ] ) + " | " + file[ 2 ] )
+		for file in lst:
+			print( file[ 0 ] + " | " + str( file[ 1 ] ) + " | " + file[ 2 ] )
 		
 		for file in lst:
 			os.remove( file[ 0 ] )

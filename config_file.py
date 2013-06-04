@@ -30,6 +30,11 @@ class ConfigFile(object):
 	m_remote_user		= 'root'
 	m_remote_password	= 'root'
 	m_remote_dir		= './'
+	# file_server_backup
+	m_use_file_server 	= False
+	m_backup_dir 		= ''
+	m_backup_user 		= ''
+	m_backup_password 	= ''
 	# mysql_user
 	m_user_name			= 'root'
 	m_password			= 'root'
@@ -60,6 +65,13 @@ class ConfigFile(object):
 			self.__debug_log.output( 'Debug', "\tREMOTE_USER:\t" 		+ self.m_remote_user )
 			self.__debug_log.output( 'Debug', "\tREMOTE_PASSWORD:t" 	+ self.m_remote_password )
 			self.__debug_log.output( 'Debug', "\tREMOTE_DIR:\t" 		+ self.m_remote_dir )
+			
+		self.__debug_log.output( 'Debug', "USE_FILE_SERVER:\t" + str( self.m_use_file_server ) )
+		if self.m_use_file_server is True:
+			self.__debug_log.output( 'Debug', "\tBACKUP_DIR:\t" 		+ self.m_backup_dir )
+			self.__debug_log.output( 'Debug', "\tBACKUP_USER:\t" 		+ self.m_backup_user )
+			self.__debug_log.output( 'Debug', "\tBACKUP_PASSWORD:t" 	+ self.m_backup_password )
+
 		if self.m_database_type == 'mysql':
 			self.__debug_log.output( 'Debug', "USER_NAME:\t\t" 		+ self.m_user_name )
 			self.__debug_log.output( 'Debug', "PASSWORD:\t\t" 			+ self.m_password )
@@ -79,6 +91,22 @@ class ConfigFile(object):
 		self.m_password 	= conf.get("mysql_user", "password")
 
 		return 0
+
+	#--------------------------------------
+	# __read_file_server_attributes
+	#--------------------------------------
+	def __read_file_server_attributes( self, conf ):
+		if conf.has_option( "file_server_backup", "use_file_server"):
+			self.m_use_file_server	= conf.getboolean("file_server_backup", "use_file_server")
+		if self.m_use_file_server is False:
+			return
+
+		if conf.has_option( "file_server_backup", "backup_dir"):
+			self.m_backup_dir		= conf.get("file_server_backup", "backup_dir")
+		if conf.has_option( "file_server_backup", "backup_user"):
+			self.m_backup_user		= conf.get("file_server_backup", "backup_user")
+		if conf.has_option( "file_server_backup", "backup_password"):
+			self.m_backup_password	= conf.get("file_server_backup", "backup_password")
 
 	#--------------------------------------
 	# __read_log_attributes
@@ -116,7 +144,7 @@ class ConfigFile(object):
 			self.m_backup_del_size	= conf.getint("backup_attribute", "backup_del_size")
 
 	#--------------------------------------
-	# __read_backup_attributes
+	# __read_remote_backup
 	#--------------------------------------
 	def __read_remote_backup( self, conf ):
 		if conf.has_option( "remote_backup", "use_remote_backup"):
@@ -166,6 +194,10 @@ class ConfigFile(object):
 		# remote_backup
 		if self.__config_type == 'BACKUP':
 			self.__read_remote_backup( conf )
+			
+		# file_server_backup
+		if self.__config_type == 'BACKUP':
+			self.__read_file_server_attributes( conf )
 		
 		if self.__read_mysql( conf ) == 1:
 			return 1

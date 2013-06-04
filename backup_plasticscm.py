@@ -180,7 +180,7 @@ def send_remote_machine( conf ):
 
 	_logger = LogFileManager()
 
-	_logger.output( 'Debug', "Start to send backup file...." )
+	_logger.output( 'Debug', "Start to send backup file( remote backup )...." )
 	# SFTP by using paramiko
 	client = None
 	sftp_connection = None
@@ -201,13 +201,59 @@ def send_remote_machine( conf ):
 		_logger.output( 'Debug', "Send BackupFile" + BACKUP_DIR +" to " + _remote_path )
 		sftp_connection.put( BACKUP_DIR, _remote_path )
 	except:
-		_logger.output( 'Debug', traceback.format_exc() )
-
+		_logger.output( 'Error', "Failed to send backupfile to remote server" )
+		_logger.output( 'Error', traceback.format_exc() )
+		return 1
 	finally:
 		if client:
 			client.close()
 		if sftp_connection:
 			sftp_connection.close()
+
+	_logger.output( 'Debug', "End to send backup file...." )
+	
+	return 0
+
+#--------------------------------------
+# send_file_server
+#--------------------------------------
+def send_file_server( conf ):
+	_logger = LogFileManager()
+
+	_logger.output( 'Debug', "Start to send backup file( file server )...." )
+	
+	strcommand = ""
+	
+	if BACKUP_DIR.endswith( ".zip" ):
+		strcommand = "put " + BACKUP_DIR + ";"
+	elif os.path.isdir( BACKUP_DIR ):
+		strcommand = "recurse on;prompt off;mput " + BACKUP_DIR + ";"
+	else:
+		return 1
+	
+	smbcommand = "smbclient " + conf.m_backup_dir + " " + conf.m_backup_password + " -U " + conf.m_backup_user + " -c \"" + strcommand + "\""
+	_logger.output( 'Debug', "smbcommand : " + smbcommand )
+
+	result = os.system( smbcommand )
+	
+	if result == 1:
+		_logger.output( 'Error', "Failed to send backupfile to file server" )
+		_logger.output( 'Error', traceback.format_exc() )
+		return 1
+	
+	return 0
+
+#--------------------------------------
+# delete_local_backup
+#--------------------------------------
+def delete_local_backup( conf ):
+	strcommand = ""
+	if conf.m_compress:
+		shutil.rmtree( BACKUP_DIR )
+	else:
+		# remove compress file
+		os.remove( BACKUP_DIR )
+
 
 #--------------------------------------
 # main
@@ -237,21 +283,30 @@ if __name__ == "__main__":
 			sys.exit()
 	
 	result = copy_setting_files()
-	
+
 #	_logger.output( 'Debug', "PlasticSCM Start" )
 #	start_plasticSCM()
-	
+
 	if conf.m_compress:
 		result = zip_backupfile()	
 		if result == 1:
 			_logger.shutdown()
 			sys.exit()
-	
+
 	if conf.m_use_remote_backup is True:
 		result = send_remote_machine( conf )
 		if result == 1:
 			_logger.shutdown()
 			sys.exit()
-	
+
+	if conf.m_use_file_server is True:
+		result = send_file_server( conf )
+		if result == 1:
+			_logger.shutdown()
+			sys.exit()
+			
+	if conf.m_use_remote_backup is False and conf.m_use_file_server is False:
+		delete_local_backup( conf )
+
 	_logger.shutdown()
 	
