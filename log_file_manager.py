@@ -13,8 +13,15 @@ import smtplib
 
 class LogFileManager(object):
 
-	__log_name 		= 'backuplog'
-	__output_log 	= False
+	__log_name 				= 'backuplog'
+	__output_log 			= False
+	__use_email				= False
+	__email_subject			= ''
+	__email_from			= ''
+	__email_to				= ''
+	__email_login_user		= ''
+	__email_login_password	= ''
+	__email_smtp_server		= ''
 	
 	def __new__( clsObj ):
 		if not hasattr( clsObj, "__instance__" ):
@@ -26,15 +33,13 @@ class LogFileManager(object):
 	#--------------------------------------
 	def __delete_old_logfile( self, log_dir, backup_cnt ):
 		_find_name = self.__log_name + '*'
-		print( "_find_name: " + _find_name )
 		filenames = glob.glob( os.path.join( log_dir, _find_name ) )
 		file_lst = []
 		for file in filenames:
 			file = os.path.join( log_dir, file )
 			file_lst.append([file,os.stat( file ).st_size, time.ctime(os.stat(file).st_mtime)])
 
-		delete_cnt = len( file_lst ) - backup_cnt + 1
-		print( "delete_cnt: " + str( delete_cnt ) )
+		delete_cnt = len( file_lst ) - backup_cnt
 		
 		if delete_cnt <= 0:
 			return
@@ -55,26 +60,32 @@ class LogFileManager(object):
 	#--------------------------------------
 	# setup_backuplog
 	#--------------------------------------
-	def setup_backuplog( self, log_dir, dump_date, backup_cnt ):
-		# delete old log
-		self.__delete_old_logfile( log_dir, backup_cnt )
+	def setup_backuplog( self, conf ):
 
-		_backuplog = log_dir + self.__log_name + dump_date + ".log"
-		self.output( 'Debug', "make logfile:\t" + os.path.abspath( _backuplog ) )
+		_backuplog = conf.m_backup_log_dir + self.__log_name + conf.m_dump_date + ".log"
 		try:
 			logging.basicConfig(filename=_backuplog, level=logging.DEBUG, format="%(asctime)s [%(levelname)s]: %(message)s")
 		except:
-			print( traceback.format_exc() )
+			self.output( 'Error', traceback.format_exc() )
 			return 1
-		
-#		list = os.listdir( log_dir )
-#		for file in list:
-#			print( file )
 
-		# write header
-		logging.debug( "Backup Start" )
+		__use_email 			= conf.m_use_email
+		__email_subject 		= conf.m_email_subject
+		__email_from			= conf.m_email_from
+		__email_to				= conf.m_email_to
+		__email_login_user		= conf.m_email_login_user
+		__email_login_password 	= conf.m_email_login_password
+		__email_smtp_server 	= conf.m_email_smtp_server
+		__email_port 			= conf.m_email_port
+
+		self.__output_log 		= True
+
+		self.output( 'Debug', "make logfile:\t" + os.path.abspath( _backuplog ) )
+		self.output( 'Debug', "Backup Start" )
+
+		# delete old log
+		self.__delete_old_logfile( conf.m_backup_log_dir, conf.m_backup_log_cnt )
 		
-		self.__output_log = True
 		return 0
 		
 	#--------------------------------------
@@ -87,17 +98,21 @@ class LogFileManager(object):
 	# sendErrorMail
 	#--------------------------------------
 	def send_mail( self, mailtext ):
+		
+		if __use_email is False:
+			return
+		
 		msg 			= MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
-		msg['Subject']	= Header('backup error','utf-8')
-		msg['From']		= 'root@zisaba.com'
-		msg['To']		= 'hiraishi_asami@artdink.co.jp'
+		msg['Subject']	= Header( __email_subject,'utf-8' )
+		msg['From']		= __email_from
+		msg['To']		= __email_to
 		msg['Date']		= formatdate()
 
-		sendmail = smtplib.SMTP('smtp.artdink.co.jp',25)
+		sendmail = smtplib.SMTP( email_smtp_server, email_port )
 		sendmail.ehlo()
 		sendmail.starttls()
 		sendmail.ehlo()
-		sendmail.login('ahiraishi','mumu1224')
+		sendmail.login( email_login_user, email_login_password )
 		sendmail.sendmail(msg['From'],msg['To'],msg.as_string())
 
 		exit()

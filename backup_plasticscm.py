@@ -81,7 +81,7 @@ def dump_mysql( dump_date, local_dir, user_name, password ):
 	try:
 		#backup mysql
 		_backup_path = BACKUP_DIR + DUMP_FILE
-		command_str = 'mysqldump --events -x --all-databases --default-character-set=utf8 --hex-brob -u' + user_name + ' -p' + password + ' > ' + _backup_path
+		command_str = 'mysqldump --events -x --all-databases --default-character-set=utf8 --hex-blob -u' + user_name + ' -p' + password + ' > ' + _backup_path
 		os.system( command_str )
 	except:
 		_logger.output( 'Error', traceback.format_exc() )

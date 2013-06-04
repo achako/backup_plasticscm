@@ -20,9 +20,19 @@ class ConfigFile(object):
 	m_database_type 	= 'mysql'
 	m_local_dir 		= '~/backup_tmp/'
 	m_compress 			= False
+	m_backup_del_size	= 1000
+	#log_attribute
 	m_backup_log_cnt 	= 3
 	m_backup_log_dir	= './'
-	m_backup_del_size	= 1000
+	# email_attribute
+	m_use_email 			= False
+	m_email_subject 		= ''
+	m_email_from			= ''
+	m_email_to				= ''
+	m_email_login_user		= ''
+	m_email_login_password 	= ''
+	m_email_smtp_server		= ''
+	m_email_port			= 25
 	# remote_backup
 	m_use_remote_backup = False
 	m_remote_host 		= 'localhost'
@@ -66,6 +76,16 @@ class ConfigFile(object):
 			self.__debug_log.output( 'Debug', "\tREMOTE_USER:\t" 		+ self.m_remote_user )
 			self.__debug_log.output( 'Debug', "\tREMOTE_PASSWORD:t" 	+ self.m_remote_password )
 			self.__debug_log.output( 'Debug', "\tREMOTE_DIR:\t" 		+ self.m_remote_dir )
+
+		self.__debug_log.output( 'Debug', "USE_EMAIL:\t" + str( self.m_use_email ) )
+		if self.m_use_email is True:
+			self.__debug_log.output( 'Debug', "\tEMAIL_SUBJECT:\t" 			+ self.m_email_subject )
+			self.__debug_log.output( 'Debug', "\tEMAIL_FROM:\t" 			+ self.m_email_from )
+			self.__debug_log.output( 'Debug', "\tEMAIL_TO:\t" 				+ self.m_email_to )
+			self.__debug_log.output( 'Debug', "\tEMAIL_LOGIN_USER:\t" 		+ self.m_email_login_user )
+			self.__debug_log.output( 'Debug', "\tEMAIL_LOGIN_PASSWORD:\t" 	+ self.m_email_login_password )
+			self.__debug_log.output( 'Debug', "\tEMAIL_SMTP_SERVER:\t" 		+ self.m_email_smtp_server )
+			self.__debug_log.output( 'Debug', "\tEMAIL_PORT:\t" 			+ str( self.m_email_port ) )
 			
 		self.__debug_log.output( 'Debug', "USE_FILE_SERVER:\t" + str( self.m_use_file_server ) )
 		if self.m_use_file_server is True:
@@ -133,6 +153,30 @@ class ConfigFile(object):
 			self.m_backup_log_dir += "/"
 
 	#--------------------------------------
+	# __read_email_attributes
+	#--------------------------------------
+	def __read_email_attribute( self, conf ):
+		if conf.has_option( "email_attribute", "use_email"):
+			self.m_use_email	= conf.getboolean("email_attribute", "use_email")
+		if self.m_use_email is False:
+			return
+
+		if conf.has_option( "email_attribute", "email_subject"):
+			self.m_email_subject		= conf.get("email_attribute", "email_subject")
+		if conf.has_option( "email_attribute", "email_from"):
+			self.m_email_from			= conf.get("email_attribute", "email_from")
+		if conf.has_option( "email_attribute", "email_to"):
+			self.m_email_to				= conf.get("email_attribute", "email_to")
+		if conf.has_option( "email_attribute", "email_login_user"):
+			self.m_email_login_user		= conf.get("email_attribute", "email_login_user")
+		if conf.has_option( "email_attribute", "email_login_password"):
+			self.m_email_login_password	= conf.get("email_attribute", "email_login_password")
+		if conf.has_option( "email_attribute", "email_smtp_server"):
+			self.m_email_smtp_server	= conf.get("email_attribute", "email_smtp_server")
+		if conf.has_option( "email_attribute", "email_port"):
+			self.m_email_port			= conf.get("email_attribute", "email_port")
+
+	#--------------------------------------
 	# __read_backup_attributes
 	#--------------------------------------
 	def __read_backup_attributes( self, conf ):
@@ -186,11 +230,11 @@ class ConfigFile(object):
 		# backup_attribute
 		if self.__config_type == 'BACKUP':
 			self.__read_log_attributes( conf )
+			self.__read_email_attribute( conf )
 
 		# setup logsettings
 		if self.__config_type == 'BACKUP':
-			self.__debug_log.setup_backuplog( self.m_backup_log_dir, self.m_dump_date, self.m_backup_log_cnt )
-
+			self.__debug_log.setup_backuplog( self )
 
 		if self.__config_type == 'BACKUP':
 			self.__read_backup_attributes( conf )
@@ -203,9 +247,11 @@ class ConfigFile(object):
 		if self.__config_type == 'BACKUP':
 			self.__read_file_server_attributes( conf )
 		
+		# mysql
 		if self.__read_mysql( conf ) == 1:
 			return 1
 		
+		# output
 		if self.__config_type == 'BACKUP':
 			self.__output_config()
 		

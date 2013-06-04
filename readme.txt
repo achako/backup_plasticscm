@@ -88,6 +88,24 @@ backup_log=./
 # バックアップログを保存する数です。保存数を超えたら古いものから自動的に削除されます。
 log_save_cnt=5
 
+[email_attribute]
+# エラー時に送信する場合はTrue
+use_email=False
+# 件名
+email_subject=
+# 差出人のアドレス
+email_from=
+# 宛先のアドレス
+email_to=
+# ユーザー名
+email_login_user=
+# ユーザーのパスワード
+email_login_password=
+# SMTPサーバー
+email_smtp_server=
+# SMTPポート番号
+email_port=25
+
 # 他のPCにバックアップする場合はこちらを設定します
 [remote_backup]
 # 他のPCにバックアップを保存する場合はTrueにします。(デフォルトはFalse)
