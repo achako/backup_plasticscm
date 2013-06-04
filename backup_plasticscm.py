@@ -225,13 +225,24 @@ def send_file_server( conf ):
 	strcommand = ""
 	
 	if BACKUP_DIR.endswith( ".zip" ):
-		strcommand = "put " + BACKUP_DIR + ";"
+		_cd_dir = os.path.dirname( BACKUP_DIR )
+		_send_file = os.path.basename( BACKUP_DIR )
+		strcommand = "lcd " + _cd_dir +";put " + _send_file + ";"
 	elif os.path.isdir( BACKUP_DIR ):
-		strcommand = "recurse on;prompt off;mput " + BACKUP_DIR + ";"
+		_cd_dirlist = BACKUP_DIR.split( "/" )
+		_cp_dir = _cd_dirlist[ len( _cd_dirlist ) - 2 ]
+		strcommand = "lcd " + BACKUP_DIR + ";lcd ../;recurse on;prompt off;mput " + _cp_dir + ";"
 	else:
 		return 1
 	
-	smbcommand = "smbclient " + conf.m_backup_dir + " " + conf.m_backup_password + " -U " + conf.m_backup_user + " -c \"" + strcommand + "\""
+	smb_conf = ""
+
+	if conf.m_backup_user != "" and conf.m_backup_password != "":
+		smb_conf = conf.m_backup_password + " -U " + conf.m_backup_user + " "
+	if conf.m_backup_dir != "":
+		smb_conf += "-D " + conf.m_backup_dir + " "
+
+	smbcommand = "smbclient " + conf.m_backup_host + " " + smb_conf + "-c \"" + strcommand + "quit\""
 	_logger.output( 'Debug', "smbcommand : " + smbcommand )
 
 	result = os.system( smbcommand )

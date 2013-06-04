@@ -32,6 +32,7 @@ class ConfigFile(object):
 	m_remote_dir		= './'
 	# file_server_backup
 	m_use_file_server 	= False
+	m_backup_host		= ''
 	m_backup_dir 		= ''
 	m_backup_user 		= ''
 	m_backup_password 	= ''
@@ -68,6 +69,7 @@ class ConfigFile(object):
 			
 		self.__debug_log.output( 'Debug', "USE_FILE_SERVER:\t" + str( self.m_use_file_server ) )
 		if self.m_use_file_server is True:
+			self.__debug_log.output( 'Debug', "\tBACKUP_HOST:\t" 		+ self.m_backup_host )
 			self.__debug_log.output( 'Debug', "\tBACKUP_DIR:\t" 		+ self.m_backup_dir )
 			self.__debug_log.output( 'Debug', "\tBACKUP_USER:\t" 		+ self.m_backup_user )
 			self.__debug_log.output( 'Debug', "\tBACKUP_PASSWORD:t" 	+ self.m_backup_password )
@@ -101,6 +103,8 @@ class ConfigFile(object):
 		if self.m_use_file_server is False:
 			return
 
+		if conf.has_option( "file_server_backup", "backup_host"):
+			self.m_backup_host		= conf.get("file_server_backup", "backup_host")
 		if conf.has_option( "file_server_backup", "backup_dir"):
 			self.m_backup_dir		= conf.get("file_server_backup", "backup_dir")
 		if conf.has_option( "file_server_backup", "backup_user"):

@@ -57,6 +57,7 @@ backup_log=./
 # バックアップログを保存する数です。保存数を超えたら古いものから自動的に削除されます。
 log_save_cnt=5
 
+# 他のPCにバックアップする場合はこちらを設定します
 [remote_backup]
 # 他のPCにバックアップを保存する場合はTrueにします。(デフォルトはFalse)
 use_remote_backup=False
@@ -70,6 +71,19 @@ remote_user=
 remote_password=
 # 転送先で保存するディレクトリです
 remote_dir=
+
+# NASなどのファイルサーバーにsmbclientを使って転送します
+[file_server_backup]
+# ファイルサーバーにバックアップする場合はTrueにします。
+use_file_server=False
+# ファイルサーバーのホスト名と共有フォルダ名です
+backup_host=
+# ファイルサーバーのバックアップ先のディレクトリ名(共有ファイルからのパス)を指定します
+backup_dir=
+# アクセス制限がある場合はユーザーIDを設定します
+backup_user=
+# アクセス制限がある場合はユーザーIDのパスワードを設定します
+backup_password=
 
 [mysql_user]
 # MySQLにログインするためのユーザーです(デフォルトはroot)
