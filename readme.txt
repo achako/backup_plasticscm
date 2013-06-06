@@ -31,7 +31,10 @@ restore_plasticscm.py
 // 設定手順
 //=================================
 
-・バックアップスクリプトをダウンロード(まだ場所を決めていないので後から書くこと)
+・バックアップスクリプトをダウンロード
+	git clone git://github.com/achako/backup_plasticscm.git
+	masterブランチに切り替える
+	git checkout master
 
 ・必要なものをインストール
 	Python
