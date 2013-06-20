@@ -19,8 +19,6 @@ class LogFileManager(object):
 	__email_subject			= ''
 	__email_from			= ''
 	__email_to				= ''
-	__email_login_user		= ''
-	__email_login_password	= ''
 	__email_smtp_server		= ''
 	
 	def __new__( clsObj ):
@@ -69,14 +67,12 @@ class LogFileManager(object):
 			self.output( 'Error', traceback.format_exc() )
 			return 1
 
-		__use_email 			= conf.m_use_email
-		__email_subject 		= conf.m_email_subject
-		__email_from			= conf.m_email_from
-		__email_to				= conf.m_email_to
-		__email_login_user		= conf.m_email_login_user
-		__email_login_password 	= conf.m_email_login_password
-		__email_smtp_server 	= conf.m_email_smtp_server
-		__email_port 			= conf.m_email_port
+		self.__use_email 			= conf.m_use_email
+		self.__email_subject 		= conf.m_email_subject
+		self.__email_from			= conf.m_email_from
+		self.__email_to				= conf.m_email_to
+		self.__email_smtp_server 	= conf.m_email_smtp_server
+		self.__email_port 			= conf.m_email_port
 
 		self.__output_log 		= True
 
@@ -99,24 +95,24 @@ class LogFileManager(object):
 	#--------------------------------------
 	def send_mail( self, mailtext ):
 		
-		if __use_email is False:
+		if self.__use_email is False:
 			return
 		
-		msg 			= MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
-		msg['Subject']	= Header( __email_subject,'utf-8' )
-		msg['From']		= __email_from
-		msg['To']		= __email_to
+		msg 			= MIMEText( mailtext.encode('utf-8'),'plain','utf-8' )
+		msg['Subject']	= Header( self.__email_subject,'utf-8' )
+		msg['From']		= self.__email_from
+		msg['To']		= self.__email_to
 		msg['Date']		= formatdate()
 
-		sendmail = smtplib.SMTP( email_smtp_server, email_port )
+		sendmail = smtplib.SMTP( self.__email_smtp_server, email_port )
 		sendmail.ehlo()
 		sendmail.starttls()
 		sendmail.ehlo()
-		sendmail.login( email_login_user, email_login_password )
+		sendmail.login( self.__email_login_user, self.__email_login_password )
 		sendmail.sendmail(msg['From'],msg['To'],msg.as_string())
 
 		exit()
-			
+
 	#--------------------------------------
 	# __read_backup_attributes
 	#--------------------------------------
