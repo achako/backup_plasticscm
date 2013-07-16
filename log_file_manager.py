@@ -19,9 +19,8 @@ class LogFileManager(object):
 	__email_subject			= ''
 	__email_from			= ''
 	__email_to				= ''
-	__email_login_user		= ''
-	__email_login_password	= ''
 	__email_smtp_server		= ''
+	__output_log_path		= ''
 	
 	def __new__( clsObj ):
 		if not hasattr( clsObj, "__instance__" ):
@@ -63,20 +62,27 @@ class LogFileManager(object):
 	def setup_backuplog( self, conf ):
 
 		_backuplog = conf.m_backup_log_dir + self.__log_name + conf.m_dump_date + ".log"
+		_current_dir 	= os.getcwd()
+		_python_path 	= os.path.abspath( os.path.dirname(__file__) )
+		os.chdir( _python_path )
+		_backuplog 		= os.path.abspath( _backuplog )
+		conf.m_backup_log_dir =  os.path.abspath( conf.m_backup_log_dir )
+		os.chdir( _current_dir )
+
 		try:
 			logging.basicConfig(filename=_backuplog, level=logging.DEBUG, format="%(asctime)s [%(levelname)s]: %(message)s")
 		except:
 			self.output( 'Error', traceback.format_exc() )
 			return 1
 
-		__use_email 			= conf.m_use_email
-		__email_subject 		= conf.m_email_subject
-		__email_from			= conf.m_email_from
-		__email_to				= conf.m_email_to
-		__email_login_user		= conf.m_email_login_user
-		__email_login_password 	= conf.m_email_login_password
-		__email_smtp_server 	= conf.m_email_smtp_server
-		__email_port 			= conf.m_email_port
+		self.__output_log_path  = _backuplog
+
+		self.__use_email 			= conf.m_use_email
+		self.__email_subject 		= conf.m_email_subject
+		self.__email_from			= conf.m_email_from
+		self.__email_to				= conf.m_email_to
+		self.__email_smtp_server 	= conf.m_email_smtp_server
+		self.__email_port 			= conf.m_email_port
 
 		self.__output_log 		= True
 
@@ -91,32 +97,53 @@ class LogFileManager(object):
 	#--------------------------------------
 	# shutdown
 	#--------------------------------------
-	def shutdown( self ):
+	def shutdown( self, _message ):
 		logging.shutdown()
+		self.send_mail( _message )
+
 	
 	#--------------------------------------
 	# sendErrorMail
 	#--------------------------------------
 	def send_mail( self, mailtext ):
 		
-		if __use_email is False:
+		if self.__use_email is False:
 			return
 		
-		msg 			= MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
-		msg['Subject']	= Header( __email_subject,'utf-8' )
-		msg['From']		= __email_from
-		msg['To']		= __email_to
+		msg 			= MIMEMultipart()
+		msg['Subject']	= Header( self.__email_subject,'utf-8' )
+		msg['From']		= self.__email_from
+		msg['To']		= self.__email_to
 		msg['Date']		= formatdate()
+		body			= MIMEText(mailtext.encode('utf-8'),'plain','utf-8')
+		msg.attach(body)
+		
+		attachment 		= MIMEBase( 'text', 'plain' )
+		
+		file = None
+		try:
+			file = open( self.__output_log_path )
+			attachment.set_payload( file.read() )
+		except:
+			print( 'Error: ' + traceback.format_exc() )
+		finally:
+			if file != None:
+				file.close()
 
-		sendmail = smtplib.SMTP( email_smtp_server, email_port )
-		sendmail.ehlo()
-		sendmail.starttls()
-		sendmail.ehlo()
-		sendmail.login( email_login_user, email_login_password )
-		sendmail.sendmail(msg['From'],msg['To'],msg.as_string())
+		Encoders.encode_base64( attachment )
+		msg.attach( attachment )
+		attachment.add_header("Content-Disposition","attachment", filename=self.__output_log_path )
 
-		exit()
-			
+		sendmail = None
+		try:
+			sendmail = smtplib.SMTP( self.__email_smtp_server, self.__email_port )
+			sendmail.sendmail( msg['From'], msg['To'], msg.as_string() )
+		except:
+			print( 'Error: ' + traceback.format_exc() )
+		finally:
+			if sendmail != None:
+				sendmail.close()
+
 	#--------------------------------------
 	# __read_backup_attributes
 	#--------------------------------------

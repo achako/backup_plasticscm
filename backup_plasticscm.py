@@ -167,6 +167,9 @@ def zip_backupfile():
 #--------------------------------------
 def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 	
+	_logger = LogFileManager()
+	_logger.output( 'Debug', "delete_backup_files Start...." )
+
 	# count backupfiles in remote directory
 	filenames = sftp_connection.listdir( remote_dir )
 
@@ -182,7 +185,7 @@ def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 	_logger.output( 'Debug', "BackupDirectory's total size: " + str( total_size ) + "(Byte)" )
 	_logger.output( 'Debug', "DeleteBackupSize: " + str( backup_del_size * 1000000 ) + "(Byte)" )
 	
-	if total_size >= backup_del_size * 1000000:
+	if total_size/1000000 >= backup_del_size:
 		_logger.output( 'Debug', "total size over DeleteBackupSize: deete start..." )
 		# order by old date
 		lst = sorted( file_lst, key=itemgetter(2), reverse = True )
@@ -194,6 +197,8 @@ def delete_backup_files( sftp_connection, remote_dir, backup_del_size ):
 				_logger.debug( "removed backup:" + file[ 0 ] )
 			cnt += 1
 		_logger.output( 'Debug', "Delete backup file end...." )
+
+	_logger.output( 'Debug', "delete_backup_files End...." )
 
 #--------------------------------------
 # send_remote_machine
@@ -207,11 +212,16 @@ def send_remote_machine( conf ):
 	client = None
 	sftp_connection = None
 	try:
+		_logger.output( 'Debug', "client = paramiko.SSHClient()" )
 		client = paramiko.SSHClient()
+		_logger.output( 'Debug', "client.set_missing_host_key_policy" )
 		client.set_missing_host_key_policy( paramiko.AutoAddPolicy() )
+		_logger.output( 'Debug', "client.connect" )
 		client.connect( conf.m_remote_host, port=conf.m_remote_port, username=conf.m_remote_user, password=conf.m_remote_password )
+		_logger.output( 'Debug', "client.open_sftp()" )
 		sftp_connection = client.open_sftp()
-
+		
+		# curtail backup files
 		delete_backup_files( sftp_connection, conf.m_remote_dir, conf.m_backup_del_size )
 
 		_remote_path = conf.m_remote_dir
@@ -326,7 +336,7 @@ if __name__ == "__main__":
 	if conf.m_database_type == 'mysql':
 		result = dump_mysql( conf.m_dump_date, conf.m_local_dir, conf.m_user_name, conf.m_password )
 		if result == 1:
-			_logger.shutdown()
+			_logger.shutdown( 'Error :dump_mysql close...\n' )
 			sys.exit()
 	
 	result = copy_setting_files()
@@ -337,23 +347,25 @@ if __name__ == "__main__":
 	if conf.m_compress:
 		result = zip_backupfile()	
 		if result == 1:
-			_logger.shutdown()
+			_logger.shutdown( 'Error :zip_backupfile close...\n' )
 			sys.exit()
 
 	if conf.m_use_remote_backup is True:
 		result = send_remote_machine( conf )
 		if result == 1:
-			_logger.shutdown()
+			_logger.shutdown( 'Error :send_remote_machine close...\n' )
 			sys.exit()
 
 	if conf.m_use_file_server is True:
 		result = send_file_server( conf )
 		if result == 1:
-			_logger.shutdown()
+			_logger.shutdown( 'Error :send_file_server close...\n' )
 			sys.exit()
 			
 	if conf.m_use_remote_backup is False and conf.m_use_file_server is False:
 		delete_local_backup( conf )
 
-	_logger.shutdown()
+	_message = 'PlasticSCM backup Succeed!\n\n'
+	
+	_logger.shutdown( _message )
 	

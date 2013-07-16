@@ -100,10 +100,6 @@ email_subject=
 email_from=
 # 宛先のアドレス
 email_to=
-# ユーザー名
-email_login_user=
-# ユーザーのパスワード
-email_login_password=
 # SMTPサーバー
 email_smtp_server=
 # SMTPポート番号
